@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "Subtitle Merger combines subtitles from two files into one, with customizable position and color settings"
 license = "MIT"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/rasmus-kirk/sub-merge"
+license-file = "LICENSE.txt"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
