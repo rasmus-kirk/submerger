@@ -1,6 +1,6 @@
 [package]
 name = "sub-merge"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Subtitle Merger combines subtitles from two files into one, with customizable position and color settings"
 license = "MIT"
