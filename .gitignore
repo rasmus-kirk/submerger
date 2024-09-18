@@ -1,0 +1,5 @@
+result
+/target
+**/*.vtt
+**/*.srt
+**/*.webm
