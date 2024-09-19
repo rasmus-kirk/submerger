@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, Result};
-use log::info;
+use log::{info, trace};
 use regex::Regex;
 use std::{
     collections::HashMap,
@@ -68,8 +68,11 @@ pub fn find_matching_subtitle_files(
 
     for entry in WalkDir::new(root_dir).follow_links(true) {
         let entry = entry?;
+        trace!("Found entry: {:?}", entry.path());
+
         let dir_path = entry.path();
         if !entry.file_type().is_dir() {
+            trace!("Entry {:?} was not a dir", entry.path());
             continue;
         }
 
@@ -80,6 +83,8 @@ pub fn find_matching_subtitle_files(
                 && let Some(file_name) = file_path.file_name().and_then(|n| n.to_str())
                 && let Some(captures) = subtitle_pattern.captures(file_name)
             {
+                trace!("Found file: {}", file_name);
+
                 let lang = captures
                     .name("lang")
                     .ok_or_else(|| {

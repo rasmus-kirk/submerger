@@ -1,11 +1,10 @@
-# Subtitle Merger
+# Submerge
 
-**Subtitle Merger** is a simple Rust-based tool designed to merge subtitles
-from two different files into a single output file. This tool is especially
-useful for language learners who want to watch content with subtitles in
-multiple languages simultaneously.
+**Submerge** is a simple tool designed to merge subtitles from two different
+files into a single output file. It's especially useful for language learners
+who want to watch content with subtitles in multiple languages simultaneously.
 
-The tool offers two main functionalities: direct merging of two subtitle
+The tool offers two main functionalities: Direct merging of two subtitle
 files for quick, one-time use, and a more advanced recursive search feature
 that scans entire directories for subtitle files matching specific language
 preferences.
@@ -14,8 +13,10 @@ preferences.
 
 - Merge two subtitle files into one output file.
 - Customize subtitle color and position for the second subtitle track.
-- Recursively search directories for subtitle files to merge based on language markers.
-- Supports both `.srt` and `.vtt` subtitle formats for inputs, only `.srt` as output.
+- Recursively search directories for subtitle files to merge based on
+  language markers.
+- Supports both `.srt` and `.vtt` subtitle formats for inputs, only outputs
+  `.srt` however.
 
 ## Installation
 
@@ -87,35 +88,34 @@ nix develop github:rasmus-kirk/sub-merge -c $SHELL
 
 ## Usage
 
-You can either merge two files directly or recursively search a directory for matching subtitle pairs.
+You can either merge two files directly or recursively search a directory
+for matching subtitle pairs.
 
 ### 1. Merging Two Subtitle Files
 
 Merge two subtitle files into a single output:
 
 ```
-cargo run -- simple-cli <sub1> <sub2> --out <output_file> [--color <color>] [--position <position>]
+sub-merge simple [OPTIONS] <SUB1> <SUB2> <OUT>
 ```
 
-- `<sub1>`: Path to the first subtitle file.
-- `<sub2>`: Path to the second subtitle file.
-- `--out <output_file>`: Output file where the merged subtitles will be saved.
-- `--color <color>`: (Optional) Sets the color for the second subtitle track.
-- `--position <position>`: (Optional) Sets the position of the second subtitle track. Available positions:
-  - `BottomLeft`
-  - `BottomCenter` (default)
-  - `BottomRight`
-  - `MiddleLeft`
-  - `MiddleCenter`
-  - `MiddleRight`
-  - `TopLeft`
-  - `TopCenter`
-  - `TopRight`
+Required:
+
+- `<SUB1>`: Path to the first subtitle file
+- `<SUB2>`: Path to the first subtitle file
+- `<OUT>`:  Output file where the merged subtitles will be saved
+
+Optional:
+
+- `--color <COLOR>`          Sets the color for the second subtitle track
+- `--position <POSITION>`    Sets the position of the second subtitle track (default: top-center)
+- `--log-level <LOG_LEVEL>`  Sets the level of logging [default: warn] [possible values: error, warn, info, debug, trace]
+- `--help`                   Print help
 
 #### Example
 
 ```bash
-cargo run -- simple-cli movie.en.srt movie.ja.srt --out merged.srt --color "#fbf1c7" --position top-center
+sub-merge simple movie.en.srt movie.ja.srt --out merged.srt --color "#fbf1c7" --position top-center
 ```
 
 ### 2. Recursive Subtitle Merging
@@ -123,14 +123,22 @@ cargo run -- simple-cli movie.en.srt movie.ja.srt --out merged.srt --color "#fbf
 Search a directory for subtitle files matching given language codes and merge them:
 
 ```
-cargo run -- recursive-merge <path> --sub1-lang <lang1> --sub2-lang <lang2> [--color <color>] [--position <position>]
+sub-merge recursive [OPTIONS] <SUB1_LANG> <SUB2_LANG> <PATH>
 ```
 
-- `<path>`: Root directory to search for subtitle files.
-- `--sub1-lang <lang1>`: Language code for the first subtitle file (e.g., `en` for English).
-- `--sub2-lang <lang2>`: Language code for the second subtitle file (e.g., `ja` for Japanese).
-- `--color <color>`: (Optional) Sets the color for the second subtitle track.
-- `--position <position>`: (Optional) Sets the position of the second subtitle track.
+Required:
+
+- `<SUB1_LANG>`: Language code for the first subtitle file (e.g., `en` for English)
+- `<SUB2_LANG>`: Language code for the second subtitle file (e.g., `ja` for Japanese)
+- `<PATH>`:      Root directory to recursively search for subtitle files
+
+Optional:
+
+- `--out-ext <OUT_EXT>`:     The file extension for the output file (e.g. `file.en.srt` -> `file.merged.srt` if set to `merged.srt`) (Default: `srt`)
+- `--vtt`:                   Also match and convert VTT files. Note, this will not output VTT files, only SRT is supported as output (Default: `true`)
+- `--color <COLOR>`:         Sets the color for the second subtitle track
+- `--position <POSITION>`:   Sets the position of the second subtitle track (Default: `top-center`)
+- `--log-level <LOG_LEVEL>`: Sets the level of logging (Default: `warn`)
 
 #### How it works
 
@@ -140,12 +148,14 @@ cargo run -- recursive-merge <path> --sub1-lang <lang1> --sub2-lang <lang2> [--c
   based on the provided language codes (e.g., `en`, `ja`).
 - If hearing-impaired subtitles are found (e.g., `en.hi`), they will be
   preferred only if normal subtitles (`en`) aren't available.
-- The merged subtitle output file will contain both sets of subtitles
+- The merged subtitle output file will contain both sets of subtitles and
+  be written as `ORIGINAL_FILE_NAME.OUT_EXTENSION$` in the directory where
+  the matching subs were found.
 
 #### Example
 
 ```bash
-cargo run -- recursive-merge ./movies --sub1-lang en --sub2-lang ja --color "#fbf1c7" --position top-center
+sub-merge recursive en ja ./movies --color "#fbf1c7" --position top-center
 ```
 
 ## License

@@ -1,5 +1,5 @@
 {
-  description = "Subtitle Merger combines subtitles from two files into one, with customizable position and color settings";
+  description = "Submerge combines subtitles from two files into one, with customizable position and color settings";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
