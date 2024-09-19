@@ -36,7 +36,7 @@ One way to build this project is using [Rust](https://www.rust-lang.org/tools/in
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/subtitle-merger.git
+git clone https://github.com/rasmus-kirk/sub-merge.git
 cd subtitle-merger
 ```
 
@@ -150,4 +150,4 @@ cargo run -- recursive-merge ./movies --sub1-lang en --sub2-lang ja --color "#fb
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.txt) file for details.

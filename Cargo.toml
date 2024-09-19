@@ -5,7 +5,6 @@ edition = "2021"
 description = "Subtitle Merger combines subtitles from two files into one, with customizable position and color settings"
 license = "MIT"
 repository = "https://github.com/rasmus-kirk/sub-merge"
-license-file = "LICENSE.txt"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
