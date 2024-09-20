@@ -1,6 +1,6 @@
-# Submerge
+# Submerger
 
-**Submerge** is a simple tool designed to merge subtitles from two different
+**Submerger** is a simple tool designed to merge subtitles from two different
 files into a single output file. It's especially useful for language learners
 who want to watch content with subtitles in multiple languages simultaneously.
 
@@ -27,7 +27,7 @@ preferences.
 To install using cargo:
 
 ```bash
-cargo install sub-merge
+cargo install submerger
 ```
 
 #### Building
@@ -37,8 +37,8 @@ One way to build this project is using [Rust](https://www.rust-lang.org/tools/in
 Clone the repository:
 
 ```bash
-git clone https://github.com/rasmus-kirk/sub-merge.git
-cd subtitle-merger
+git clone https://github.com/rasmus-kirk/submerger.git
+cd submerger
 ```
 
 Build the project:
@@ -52,7 +52,7 @@ cargo build --release
 #### Installation
 
 ```bash
-nix profile install github:rasmus-kirk/sub-merge
+nix profile install github:rasmus-kirk/submerger
 ```
 
 #### Building
@@ -60,7 +60,7 @@ nix profile install github:rasmus-kirk/sub-merge
 This project has a nix flake, so it can be built using nix:
 
 ```bash
-nix build github:rasmus-kirk/sub-merge
+nix build github:rasmus-kirk/submerger
 ```
 
 #### Running
@@ -68,7 +68,7 @@ nix build github:rasmus-kirk/sub-merge
 If you just wish to run the program using nix:
 
 ```bash
-nix run github:rasmus-kirk/sub-merge -- --help
+nix run github:rasmus-kirk/submerger -- --help
 ```
 
 #### Developement Shell
@@ -77,13 +77,13 @@ To enter a developement shell with the correct rust-toolchain and rust
 analyzer using nix:
 
 ```bash
-nix develop github:rasmus-kirk/sub-merge
+nix develop github:rasmus-kirk/submerger
 ```
 
 If you use a shell other than bash:
 
 ```bash
-nix develop github:rasmus-kirk/sub-merge -c $SHELL
+nix develop github:rasmus-kirk/submerger -c $SHELL
 ```
 
 ## Usage
@@ -96,7 +96,7 @@ for matching subtitle pairs.
 Merge two subtitle files into a single output:
 
 ```
-sub-merge simple [OPTIONS] <SUB1> <SUB2> <OUT>
+submerger simple [OPTIONS] <SUB1> <SUB2> <OUT>
 ```
 
 Required:
@@ -115,7 +115,7 @@ Optional:
 #### Example
 
 ```bash
-sub-merge simple movie.en.srt movie.ja.srt --out merged.srt --color "#fbf1c7" --position top-center
+submerger simple movie.en.srt movie.ja.srt --out merged.srt --color "#fbf1c7" --position top-center
 ```
 
 ### 2. Recursive Subtitle Merging
@@ -123,7 +123,7 @@ sub-merge simple movie.en.srt movie.ja.srt --out merged.srt --color "#fbf1c7" --
 Search a directory for subtitle files matching given language codes and merge them:
 
 ```
-sub-merge recursive [OPTIONS] <SUB1_LANG> <SUB2_LANG> <PATH>
+submerger recursive [OPTIONS] <SUB1_LANG> <SUB2_LANG> <PATH>
 ```
 
 Required:
@@ -155,7 +155,7 @@ Optional:
 #### Example
 
 ```bash
-sub-merge recursive en ja ./movies --color "#fbf1c7" --position top-center
+submerger recursive en ja ./movies --color "#fbf1c7" --position top-center
 ```
 
 ## License

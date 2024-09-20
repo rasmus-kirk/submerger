@@ -1,10 +1,10 @@
 [package]
-name = "sub-merge"
+name = "submerger"
 version = "0.1.2"
 edition = "2021"
-description = "Submerge combines subtitles from two files into one, with customizable position and color settings"
+description = "Submerger combines subtitles from two files into one, with customizable position and color settings"
 license = "MIT"
-repository = "https://github.com/rasmus-kirk/sub-merge"
+repository = "https://github.com/rasmus-kirk/submerger.git"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
