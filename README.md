@@ -34,6 +34,8 @@ cargo install submerger
 
 One way to build this project is using [Rust](https://www.rust-lang.org/tools/install).
 
+> **Note:** You must build using [rust nightly](https://rust-lang.github.io/rustup/concepts/toolchains.html)!
+
 Clone the repository:
 
 ```bash
@@ -48,6 +50,8 @@ cargo build --release
 ```
 
 ### Nix
+
+> **Note:** [Nix flakes](https://nixos.wiki/wiki/flakes) must be enabled!
 
 #### Installation
 
