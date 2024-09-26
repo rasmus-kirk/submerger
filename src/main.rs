@@ -5,7 +5,7 @@ mod test;
 
 use merge::*;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use core::fmt;
 use log::info;
@@ -199,14 +199,10 @@ fn main() -> Result<()> {
                             && sub1.lang == sub1_lang
                             && sub2.lang == sub2_lang
                         {
-                            if !sub1.hi {
-                                l1 = Some(sub1.clone())
-                            } else if l1.is_none() {
+                            if !sub1.hi || l1.is_none() {
                                 l1 = Some(sub1.clone())
                             }
-                            if !sub2.hi {
-                                l2 = Some(sub2.clone())
-                            } else if l2.is_none() {
+                            if !sub2.hi || l2.is_none() {
                                 l2 = Some(sub2.clone())
                             }
                         }
@@ -224,9 +220,9 @@ fn main() -> Result<()> {
                         let old_ext = s1
                             .path
                             .extension()
-                            .ok_or_else(|| anyhow!("invalid extension on {:?}", s1.path))?
+                            .context(format!("invalid extension on {:?}", s1.path))?
                             .to_str()
-                            .ok_or_else(|| anyhow!("not valid unicode ({:?})", s1.path))?;
+                            .context(format!("not valid unicode ({:?})", s1.path))?;
                         let new_ext = sub1_lang.clone() + sub2_lang.as_str() + "." + old_ext;
                         let out = dir.join(no_ext.with_extension(&out_ext));
 

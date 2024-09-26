@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Context, Result};
 use log::{info, trace};
 use regex::Regex;
 use std::{
@@ -41,12 +41,11 @@ pub fn base_file_stem(p: &Path) -> Result<PathBuf> {
     let pattern = Regex::new(r"[^\.]+")?;
     let path_string = p
         .file_name()
-        .ok_or_else(|| anyhow!("unable to parse filepath {:?}", p))?
-        .to_str()
-        .ok_or_else(|| anyhow!("unable to parse filepath {:?}", p))?;
+        .and_then(|x| x.to_str())
+        .context(format!("unable to parse filepath {:?}", p))?;
     let x = pattern
         .find(path_string)
-        .ok_or_else(|| anyhow!("unable to compute filestem for {:?}", path_string))?
+        .context(format!("unable to compute filestem for {:?}", path_string))?
         .as_str();
     Ok(Path::new(x).to_path_buf())
 }
@@ -87,12 +86,10 @@ pub fn find_matching_subtitle_files(
 
                 let lang = captures
                     .name("lang")
-                    .ok_or_else(|| {
-                        anyhow!(
-                            "unable to find lang in {}, this should be impossible",
-                            file_name
-                        )
-                    })?
+                    .context(format!(
+                        "impossible error: unable to find lang in {}",
+                        file_name
+                    ))?
                     .as_str()
                     .to_owned();
                 let hi = captures.name("hearing").is_some();
@@ -117,9 +114,12 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
     let file = fs::read_to_string(&path)?;
     let ext = path
         .extension()
-        .ok_or_else(|| anyhow!("unable to retrieve extension from file {}", file))?
+        .context(format!("unable to retrieve extension from file {}", file))?
         .to_str()
-        .ok_or_else(|| anyhow!("unable to parse extension as a string from file {}", file))?;
+        .context(format!(
+            "unable to parse extension as a string from file {}",
+            file
+        ))?;
     let subfile = match ext {
         "vtt" => vtt_to_subrip(WebVtt::parse(&file)?),
         "srt" => SubRip::parse(&file)?,
