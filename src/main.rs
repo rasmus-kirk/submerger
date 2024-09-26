@@ -49,9 +49,9 @@ impl From<log::Level> for LogLevel {
     }
 }
 
-impl Into<log::Level> for LogLevel {
-    fn into(self) -> log::Level {
-        match self {
+impl From<LogLevel> for log::Level {
+    fn from(val: LogLevel) -> Self {
+        match val {
             LogLevel::Error => log::Level::Error,
             LogLevel::Warn => log::Level::Warn,
             LogLevel::Info => log::Level::Info,
@@ -226,9 +226,6 @@ fn main() -> Result<()> {
                         let new_ext = sub1_lang.clone() + sub2_lang.as_str() + "." + old_ext;
                         let out = dir.join(no_ext.with_extension(&out_ext));
 
-                        info!("Writing subs to {:?}", no_ext);
-                        info!("Writing subs to {:?}", old_ext);
-                        info!("Writing subs to {:?}", new_ext);
                         info!("Writing subs to {:?}", out);
 
                         // Create extension for new file, e.g. "enja"
