@@ -5,7 +5,7 @@ mod test;
 
 use merge::*;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use core::fmt;
 use log::info;
@@ -217,13 +217,6 @@ fn main() -> Result<()> {
 
                         // Create extension for new file, e.g. "enja"
                         let no_ext = base_file_stem(&s1.path)?;
-                        let old_ext = s1
-                            .path
-                            .extension()
-                            .context(format!("invalid extension on {:?}", s1.path))?
-                            .to_str()
-                            .context(format!("not valid unicode ({:?})", s1.path))?;
-                        let new_ext = sub1_lang.clone() + sub2_lang.as_str() + "." + old_ext;
                         let out = dir.join(no_ext.with_extension(&out_ext));
 
                         info!("Writing subs to {:?}", out);

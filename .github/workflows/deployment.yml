@@ -22,7 +22,7 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - run: nix develop -c fmt-check
+      - run: nix develop -c check-fmt
 
   clippy:
     needs: fmt
@@ -35,5 +35,5 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - run: nix develop -c cargo clippy
+      - run: nix develop -c check-lint
 

@@ -42,8 +42,11 @@
           buildInputs = [
             pkgs.rustToolchain
             pkgs.rust-analyzer
-            (pkgs.writeShellScriptBin "fmt-check" ''
+            (pkgs.writeShellScriptBin "check-fmt" ''
               cargo fmt --manifest-path ./Cargo.toml --all -- --check
+            '')
+            (pkgs.writeShellScriptBin "check-lint" ''
+              cargo clippy -- -D warnings
             '')
           ];
         };
