@@ -105,6 +105,7 @@ enum Commands {
         sub1_position: SubPosition,
 
         /// Sets the offset of the first subtitle track (seconds)
+        #[clap(allow_hyphen_values = true)]
         #[arg(long, default_value_t = 0.0)]
         sub1_offset: f32,
 
@@ -121,6 +122,7 @@ enum Commands {
         sub2_position: SubPosition,
 
         /// Sets the offset of the second subtitle track (seconds)
+        #[clap(allow_hyphen_values = true)]
         #[arg(long, default_value_t = 0.0)]
         sub2_offset: f32,
 
@@ -151,6 +153,7 @@ enum Commands {
         sub1_position: SubPosition,
 
         /// Sets the offset of the first subtitle track (seconds)
+        #[clap(allow_hyphen_values = true)]
         #[arg(long, default_value_t = 0.0)]
         sub1_offset: f32,
 
@@ -167,6 +170,7 @@ enum Commands {
         sub2_position: SubPosition,
 
         /// Sets the offset of the second subtitle track (seconds)
+        #[clap(allow_hyphen_values = true)]
         #[arg(long, default_value_t = 0.0)]
         sub2_offset: f32,
 
