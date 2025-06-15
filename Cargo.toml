@@ -1,6 +1,6 @@
 [package]
 name = "submerger"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 description = "Submerger combines subtitles from two files into one, with customizable position and color settings"
 license = "MIT"
