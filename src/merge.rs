@@ -120,7 +120,7 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
             "unable to parse extension as a string from file {}",
             file
         ))?;
-    let subfile = match ext {
+    let mut subfile = match ext {
         "vtt" => vtt_to_subrip(WebVtt::parse(&file)?),
         "srt" => SubRip::parse(&file)?,
         _ => bail!(
@@ -128,6 +128,8 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
             ext
         ),
     };
+
+    strip_pos(&mut subfile);
 
     info!(
         "Loaded {} subtitles from {:?}",
@@ -138,28 +140,46 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
     Ok(subfile)
 }
 
-pub fn merge(
-    srt1: &SubRip,
-    srt2: &SubRip,
-    srt2_color_opt: Option<String>,
-    srt2_position: SubPosition,
-) -> SubRip {
-    let position = srt2_position.to_string();
-    let (color_start, color_end) = if let Some(color) = srt2_color_opt {
+pub fn strip_pos(srt: &mut SubRip) {
+    for sub in srt.subtitles.iter_mut() {
+        sub.line_position = None;
+        for text in sub.text.iter_mut() {
+            if let Some(s) = text.strip_prefix(r"{\an8}") {
+                *text = s.to_string();
+            }
+        }
+    }
+}
+
+pub fn apply_color_pos(srt: &SubRip, srt_color_opt: Option<String>, srt_position: SubPosition) -> SubRip {
+    let position = srt_position.to_string();
+    let (color_start, color_end) = if let Some(color) = srt_color_opt {
         (format!("<font color=\"{color}\">"), "</font>".to_owned())
     } else {
         ("".to_owned(), "".to_owned())
     };
 
-    let mut subs = srt2.subtitles.clone();
-    for sub in &mut subs {
+    let mut srt_clone = srt.clone();
+    for sub in &mut srt_clone.subtitles {
         for txt in &mut sub.text {
             *txt = format!("{position} {color_start}{txt}{color_end}");
         }
     }
+    srt_clone
+}
 
-    let mut merged_subs = srt1.clone();
-    merged_subs.subtitles.extend(subs);
+pub fn merge(
+    srt1: &SubRip,
+    srt1_color_opt: Option<String>,
+    srt1_position: SubPosition,
+    srt2: &SubRip,
+    srt2_color_opt: Option<String>,
+    srt2_position: SubPosition,
+) -> SubRip {
+    let mut merged_subs = apply_color_pos(&srt1, srt1_color_opt, srt1_position);
+    let append_subs = apply_color_pos(&srt2, srt2_color_opt, srt2_position);
+
+    merged_subs.subtitles.extend(append_subs.subtitles);
 
     for i in 0..merged_subs.subtitles.len() {
         merged_subs.subtitles[i].sequence = i as u32 + 1;

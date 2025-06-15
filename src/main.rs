@@ -94,21 +94,29 @@ enum Commands {
         #[arg(required = true)]
         sub1: PathBuf,
 
+        /// Sets the color for the first subtitle track (HTML, ex. #fbf1c7)
+        #[arg(short, long)]
+        sub1_color: Option<String>,
+
+        /// Sets the position of the first subtitle track
+        #[arg(short, long, default_value = "bottom-center")]
+        sub1_position: SubPosition,
+
         /// Path to the first subtitle file
         #[arg(required = true)]
         sub2: PathBuf,
 
-        /// Output file where the merged subtitles will be saved
-        #[arg(required = true)]
-        out: PathBuf,
-
-        /// Sets the color for the second subtitle track
+        /// Sets the color for the second subtitle track (HTML, ex. #fbf1c7)
         #[arg(short, long)]
-        color: Option<String>,
+        sub2_color: Option<String>,
 
         /// Sets the position of the second subtitle track
         #[arg(short, long, default_value = "top-center")]
-        position: SubPosition,
+        sub2_position: SubPosition,
+
+        /// Output file where the merged subtitles will be saved
+        #[arg(required = true)]
+        out: PathBuf,
 
         /// Sets the level of logging
         #[arg(short, long, default_value = "warn")]
@@ -124,9 +132,25 @@ enum Commands {
         #[arg(required = true)]
         sub1_lang: String,
 
+        /// Sets the color for the first subtitle track (HTML, ex. #fbf1c7)
+        #[arg(short, long)]
+        sub1_color: Option<String>,
+
+        /// Sets the position of the first subtitle track
+        #[arg(short, long, default_value = "bottom-center")]
+        sub1_position: SubPosition,
+
         /// Language code for the second subtitle file (e.g., `ja` for Japanese)
         #[arg(required = true)]
         sub2_lang: String,
+
+        /// Sets the color for the first subtitle track (HTML, ex. #fbf1c7)
+        #[arg(short, long)]
+        sub2_color: Option<String>,
+
+        /// Sets the position of the first subtitle track
+        #[arg(short, long, default_value = "top-center")]
+        sub2_position: SubPosition,
 
         /// Root directory to recursively search for subtitle files
         #[arg(required = true)]
@@ -140,14 +164,6 @@ enum Commands {
         #[arg(short, long, default_value = "true")]
         vtt: bool,
 
-        /// Sets the color for the second subtitle track
-        #[arg(short, long)]
-        color: Option<String>,
-
-        /// Sets the position of the second subtitle track
-        #[arg(short, long, default_value = "top-center")]
-        position: SubPosition,
-
         /// Sets the level of logging
         #[arg(short, long, default_value = "warn")]
         log_level: LogLevel,
@@ -160,15 +176,24 @@ fn main() -> Result<()> {
     match cli.subcommand {
         Commands::Simple {
             sub1,
+            sub1_color,
+            sub1_position,
             sub2,
+            sub2_color,
+            sub2_position,
             out,
-            color,
-            position,
             log_level,
         } => {
             simple_logger::init_with_level(log_level.into())?;
 
-            let merged = merge(&load_sub(sub1)?, &load_sub(sub2)?, color, position);
+            let merged = merge(
+                &load_sub(sub1)?,
+                sub1_color,
+                sub1_position,
+                &load_sub(sub2)?,
+                sub2_color,
+                sub2_position,
+            );
 
             let mut file = File::create(&out)?;
             file.write_all(merged.render().as_bytes())?;
@@ -178,9 +203,11 @@ fn main() -> Result<()> {
         Commands::Recursive {
             path,
             sub1_lang,
+            sub1_color,
+            sub1_position,
             sub2_lang,
-            color,
-            position,
+            sub2_color,
+            sub2_position,
             log_level,
             out_ext,
             vtt,
@@ -222,7 +249,14 @@ fn main() -> Result<()> {
                         info!("Writing subs to {:?}", out);
 
                         // Create extension for new file, e.g. "enja"
-                        let merged = merge(&sub1, &sub2, color.clone(), position);
+                        let merged = merge(
+                            &sub1,
+                            sub1_color.clone(),
+                            sub1_position,
+                            &sub2,
+                            sub2_color.clone(),
+                            sub2_position,
+                        );
                         let mut file = File::create(&out)?;
                         file.write_all(merged.render().as_bytes())?;
                     }
