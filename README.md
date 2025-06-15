@@ -119,7 +119,7 @@ Optional:
 #### Example
 
 ```bash
-submerger simple movie.en.srt movie.ja.srt --out merged.srt --color "#fbf1c7" --position top-center
+submerger simple movie.en.srt movie.ja.srt merged.srt --color "#fbf1c7" --position top-center
 ```
 
 ### 2. Recursive Subtitle Merging
