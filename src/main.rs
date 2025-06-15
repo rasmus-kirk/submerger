@@ -74,7 +74,7 @@ impl fmt::Display for SubPosition {
             SubPosition::TopCenter => "{\\an8}",
             SubPosition::TopRight => "{\\an9}",
         };
-        write!(f, "{}", printable)
+        write!(f, "{printable}")
     }
 }
 

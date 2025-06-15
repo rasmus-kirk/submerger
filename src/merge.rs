@@ -29,7 +29,7 @@ pub struct SubFile {
 /// > `r"[^\.]+\.(?P<lang>en|ja)(\.(?P<hearing>hi))?\.(?P<ext>srt|vtt)$"`
 ///
 /// Which is still not good, but see the corresponding test to see how it behaves in more detail.
-pub fn get_sub_path_regex(lang1: &String, lang2: &String, find_vtt: bool) -> String {
+pub fn get_sub_path_regex(lang1: &str, lang2: &str, find_vtt: bool) -> String {
     let langs = lang1.to_owned() + "|" + lang2;
     let ext = if find_vtt { "srt|vtt" } else { "srt" };
     r"[^\.]+\.(?P<lang>".to_owned() + &langs + r")(\.(?P<hearing>hi))?\.(?P<ext>" + ext + ")$"
@@ -42,10 +42,10 @@ pub fn base_file_stem(p: &Path) -> Result<PathBuf> {
     let path_string = p
         .file_name()
         .and_then(|x| x.to_str())
-        .context(format!("unable to parse filepath {:?}", p))?;
+        .context(format!("unable to parse filepath {p:?}"))?;
     let x = pattern
         .find(path_string)
-        .context(format!("unable to compute filestem for {:?}", path_string))?
+        .context(format!("unable to compute filestem for {path_string:?}"))?
         .as_str();
     Ok(Path::new(x).to_path_buf())
 }
@@ -53,8 +53,8 @@ pub fn base_file_stem(p: &Path) -> Result<PathBuf> {
 /// Recursively search a directory for the specified subtitle files.
 pub fn find_matching_subtitle_files(
     root_dir: &PathBuf,
-    lang1: &String,
-    lang2: &String,
+    lang1: &str,
+    lang2: &str,
     find_vtt: bool,
 ) -> Result<HashMap<PathBuf, Vec<SubFile>>> {
     let regex = get_sub_path_regex(lang1, lang2, find_vtt);
@@ -87,8 +87,7 @@ pub fn find_matching_subtitle_files(
                 let lang = captures
                     .name("lang")
                     .context(format!(
-                        "impossible error: unable to find lang in {}",
-                        file_name
+                        "impossible error: unable to find lang in {file_name}"
                     ))?
                     .as_str()
                     .to_owned();
@@ -114,11 +113,10 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
     let file = fs::read_to_string(&path)?;
     let ext = path
         .extension()
-        .context(format!("unable to retrieve extension from file {}", file))?
+        .context(format!("unable to retrieve extension from file {file}"))?
         .to_str()
         .context(format!(
-            "unable to parse extension as a string from file {}",
-            file
+            "unable to parse extension as a string from file {file}",
         ))?;
     let mut subfile = match ext {
         "vtt" => vtt_to_subrip(WebVtt::parse(&file)?),
@@ -151,7 +149,11 @@ pub fn strip_pos(srt: &mut SubRip) {
     }
 }
 
-pub fn apply_color_pos(srt: &SubRip, srt_color_opt: Option<String>, srt_position: SubPosition) -> SubRip {
+pub fn apply_color_pos(
+    srt: &SubRip,
+    srt_color_opt: Option<String>,
+    srt_position: SubPosition,
+) -> SubRip {
     let position = srt_position.to_string();
     let (color_start, color_end) = if let Some(color) = srt_color_opt {
         (format!("<font color=\"{color}\">"), "</font>".to_owned())
@@ -176,8 +178,8 @@ pub fn merge(
     srt2_color_opt: Option<String>,
     srt2_position: SubPosition,
 ) -> SubRip {
-    let mut merged_subs = apply_color_pos(&srt1, srt1_color_opt, srt1_position);
-    let append_subs = apply_color_pos(&srt2, srt2_color_opt, srt2_position);
+    let mut merged_subs = apply_color_pos(srt1, srt1_color_opt, srt1_position);
+    let append_subs = apply_color_pos(srt2, srt2_color_opt, srt2_position);
 
     merged_subs.subtitles.extend(append_subs.subtitles);
 
