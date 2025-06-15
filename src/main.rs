@@ -12,6 +12,8 @@ use log::info;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use std::time::Duration;
+use subtp::srt::{SrtTimestamp, SubRip};
 
 #[derive(clap::ValueEnum, Clone, Copy, Default, Debug)]
 enum SubPosition {
@@ -95,24 +97,32 @@ enum Commands {
         sub1: PathBuf,
 
         /// Sets the color for the first subtitle track (HTML, ex. #fbf1c7)
-        #[arg(short, long)]
+        #[arg(long)]
         sub1_color: Option<String>,
 
         /// Sets the position of the first subtitle track
-        #[arg(short, long, default_value = "bottom-center")]
+        #[arg(long, default_value = "bottom-center")]
         sub1_position: SubPosition,
+
+        /// Sets the offset of the first subtitle track (seconds)
+        #[arg(long, default_value_t = 0.0)]
+        sub1_offset: f32,
 
         /// Path to the first subtitle file
         #[arg(required = true)]
         sub2: PathBuf,
 
         /// Sets the color for the second subtitle track (HTML, ex. #fbf1c7)
-        #[arg(short, long)]
+        #[arg(long)]
         sub2_color: Option<String>,
 
         /// Sets the position of the second subtitle track
-        #[arg(short, long, default_value = "top-center")]
+        #[arg(long, default_value = "top-center")]
         sub2_position: SubPosition,
+
+        /// Sets the offset of the second subtitle track (seconds)
+        #[arg(long, default_value_t = 0.0)]
+        sub2_offset: f32,
 
         /// Output file where the merged subtitles will be saved
         #[arg(required = true)]
@@ -133,24 +143,32 @@ enum Commands {
         sub1_lang: String,
 
         /// Sets the color for the first subtitle track (HTML, ex. #fbf1c7)
-        #[arg(short, long)]
+        #[arg(long)]
         sub1_color: Option<String>,
 
         /// Sets the position of the first subtitle track
-        #[arg(short, long, default_value = "bottom-center")]
+        #[arg(long, default_value = "bottom-center")]
         sub1_position: SubPosition,
+
+        /// Sets the offset of the first subtitle track (seconds)
+        #[arg(long, default_value_t = 0.0)]
+        sub1_offset: f32,
 
         /// Language code for the second subtitle file (e.g., `ja` for Japanese)
         #[arg(required = true)]
         sub2_lang: String,
 
         /// Sets the color for the first subtitle track (HTML, ex. #fbf1c7)
-        #[arg(short, long)]
+        #[arg(long)]
         sub2_color: Option<String>,
 
         /// Sets the position of the first subtitle track
-        #[arg(short, long, default_value = "top-center")]
+        #[arg(long, default_value = "top-center")]
         sub2_position: SubPosition,
+
+        /// Sets the offset of the second subtitle track (seconds)
+        #[arg(long, default_value_t = 0.0)]
+        sub2_offset: f32,
 
         /// Root directory to recursively search for subtitle files
         #[arg(required = true)]
@@ -170,6 +188,37 @@ enum Commands {
     },
 }
 
+fn apply_sub_changes(
+    srt: &mut SubRip,
+    color_opt: Option<String>,
+    position: SubPosition,
+    offset: Duration,
+) {
+    let position = position.to_string();
+    let (color_start, color_end) = if let Some(color) = color_opt {
+        (format!("<font color=\"{color}\">"), "</font>".to_owned())
+    } else {
+        ("".to_owned(), "".to_owned())
+    };
+
+    for sub in &mut srt.subtitles {
+        // Strip position from original sub
+        sub.line_position = None;
+        for text in sub.text.iter_mut() {
+            if let Some(s) = text.strip_prefix(r"{\an8}") {
+                *text = s.to_string();
+            }
+        }
+
+        // Apply changes
+        for txt in &mut sub.text {
+            *txt = format!("{position} {color_start}{txt}{color_end}");
+        }
+        sub.start = SrtTimestamp::from(Into::<Duration>::into(sub.start) + offset);
+        sub.end = SrtTimestamp::from(Into::<Duration>::into(sub.end) + offset);
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -178,22 +227,25 @@ fn main() -> Result<()> {
             sub1,
             sub1_color,
             sub1_position,
+            sub1_offset,
             sub2,
             sub2_color,
             sub2_position,
+            sub2_offset,
             out,
             log_level,
         } => {
             simple_logger::init_with_level(log_level.into())?;
 
-            let merged = merge(
-                &load_sub(sub1)?,
-                sub1_color,
-                sub1_position,
-                &load_sub(sub2)?,
-                sub2_color,
-                sub2_position,
-            );
+            let mut srt1 = load_sub(sub1)?;
+            let mut srt2 = load_sub(sub2)?;
+            let sub1_offset = Duration::from_secs_f32(sub1_offset);
+            let sub2_offset = Duration::from_secs_f32(sub2_offset);
+
+            apply_sub_changes(&mut srt1, sub1_color, sub1_position, sub1_offset);
+            apply_sub_changes(&mut srt2, sub2_color, sub2_position, sub2_offset);
+
+            let merged = merge(srt1, srt2);
 
             let mut file = File::create(&out)?;
             file.write_all(merged.render().as_bytes())?;
@@ -205,9 +257,11 @@ fn main() -> Result<()> {
             sub1_lang,
             sub1_color,
             sub1_position,
+            sub1_offset,
             sub2_lang,
             sub2_color,
             sub2_position,
+            sub2_offset,
             log_level,
             out_ext,
             vtt,
@@ -239,8 +293,21 @@ fn main() -> Result<()> {
                     if let Some(s1) = l1
                         && let Some(s2) = l2
                     {
-                        let sub1 = load_sub(s1.path.clone())?;
-                        let sub2 = load_sub(s2.path.clone())?;
+                        let mut srt1 = load_sub(s1.path.clone())?;
+                        let mut srt2 = load_sub(s2.path.clone())?;
+
+                        apply_sub_changes(
+                            &mut srt1,
+                            sub1_color.clone(),
+                            sub1_position,
+                            Duration::from_secs_f32(sub1_offset),
+                        );
+                        apply_sub_changes(
+                            &mut srt2,
+                            sub2_color.clone(),
+                            sub2_position,
+                            Duration::from_secs_f32(sub2_offset),
+                        );
 
                         // Create extension for new file, e.g. "enja"
                         let no_ext = base_file_stem(&s1.path)?;
@@ -248,15 +315,7 @@ fn main() -> Result<()> {
 
                         info!("Writing subs to {:?}", out);
 
-                        // Create extension for new file, e.g. "enja"
-                        let merged = merge(
-                            &sub1,
-                            sub1_color.clone(),
-                            sub1_position,
-                            &sub2,
-                            sub2_color.clone(),
-                            sub2_position,
-                        );
+                        let merged = merge(srt1, srt2);
                         let mut file = File::create(&out)?;
                         file.write_all(merged.render().as_bytes())?;
                     }

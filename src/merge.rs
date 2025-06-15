@@ -12,8 +12,6 @@ use subtp::{
 };
 use walkdir::WalkDir;
 
-use crate::SubPosition;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SubFile {
     pub path: PathBuf,
@@ -118,7 +116,7 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
         .context(format!(
             "unable to parse extension as a string from file {file}",
         ))?;
-    let mut subfile = match ext {
+    let subfile = match ext {
         "vtt" => vtt_to_subrip(WebVtt::parse(&file)?),
         "srt" => SubRip::parse(&file)?,
         _ => bail!(
@@ -126,8 +124,6 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
             ext
         ),
     };
-
-    strip_pos(&mut subfile);
 
     info!(
         "Loaded {} subtitles from {:?}",
@@ -138,55 +134,13 @@ pub fn load_sub(path: PathBuf) -> Result<SubRip> {
     Ok(subfile)
 }
 
-pub fn strip_pos(srt: &mut SubRip) {
-    for sub in srt.subtitles.iter_mut() {
-        sub.line_position = None;
-        for text in sub.text.iter_mut() {
-            if let Some(s) = text.strip_prefix(r"{\an8}") {
-                *text = s.to_string();
-            }
-        }
+pub fn merge(mut srt1: SubRip, srt2: SubRip) -> SubRip {
+    let srt2_len = srt2.subtitles.len();
+    srt1.subtitles.extend(srt2.subtitles);
+    for i in 0..srt2_len {
+        srt1.subtitles[i].sequence = i as u32 + 1;
     }
-}
-
-pub fn apply_color_pos(
-    srt: &SubRip,
-    srt_color_opt: Option<String>,
-    srt_position: SubPosition,
-) -> SubRip {
-    let position = srt_position.to_string();
-    let (color_start, color_end) = if let Some(color) = srt_color_opt {
-        (format!("<font color=\"{color}\">"), "</font>".to_owned())
-    } else {
-        ("".to_owned(), "".to_owned())
-    };
-
-    let mut srt_clone = srt.clone();
-    for sub in &mut srt_clone.subtitles {
-        for txt in &mut sub.text {
-            *txt = format!("{position} {color_start}{txt}{color_end}");
-        }
-    }
-    srt_clone
-}
-
-pub fn merge(
-    srt1: &SubRip,
-    srt1_color_opt: Option<String>,
-    srt1_position: SubPosition,
-    srt2: &SubRip,
-    srt2_color_opt: Option<String>,
-    srt2_position: SubPosition,
-) -> SubRip {
-    let mut merged_subs = apply_color_pos(srt1, srt1_color_opt, srt1_position);
-    let append_subs = apply_color_pos(srt2, srt2_color_opt, srt2_position);
-
-    merged_subs.subtitles.extend(append_subs.subtitles);
-
-    for i in 0..merged_subs.subtitles.len() {
-        merged_subs.subtitles[i].sequence = i as u32 + 1;
-    }
-    merged_subs
+    srt1
 }
 
 fn vtt_block_to_srt(vtt_block: VttBlock, sequence: u32) -> Option<SrtSubtitle> {
