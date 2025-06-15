@@ -3,6 +3,7 @@
 mod merge;
 mod test;
 
+use chrono::Duration;
 use merge::*;
 
 use anyhow::Result;
@@ -12,7 +13,6 @@ use log::info;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use std::time::Duration;
 use subtp::srt::{SrtTimestamp, SubRip};
 
 #[derive(clap::ValueEnum, Clone, Copy, Default, Debug)]
@@ -192,11 +192,44 @@ enum Commands {
     },
 }
 
+fn f32_to_chrono(secs: f32) -> Duration {
+    // Convert to milliseconds, rounding toward zero
+    let millis = secs * 1000.0;
+    Duration::milliseconds(millis as i64)
+}
+
+// Convert SrtTimestamp to chrono::Duration
+pub fn srt_to_chrono(srt: SrtTimestamp) -> Duration {
+    Duration::milliseconds(
+        (srt.hours as i64 * 60 * 60 * 1000)
+            + (srt.minutes as i64 * 60 * 1000)
+            + (srt.seconds as i64 * 1000)
+            + srt.milliseconds as i64,
+    )
+}
+
+// Convert chrono::Duration to SrtTimestamp
+pub fn chrono_to_srt(duration: Duration) -> SrtTimestamp {
+    let total_millis = duration.num_milliseconds().abs();
+
+    let hours = (total_millis / (60 * 60 * 1000)) as u8;
+    let minutes = ((total_millis / (60 * 1000)) % 60) as u8;
+    let seconds = ((total_millis / 1000) % 60) as u8;
+    let milliseconds = (total_millis % 1000) as u16;
+
+    SrtTimestamp {
+        hours,
+        minutes,
+        seconds,
+        milliseconds,
+    }
+}
+
 fn apply_sub_changes(
     srt: &mut SubRip,
     color_opt: Option<String>,
     position: SubPosition,
-    offset: Duration,
+    offset: f32,
 ) {
     let position = position.to_string();
     let (color_start, color_end) = if let Some(color) = color_opt {
@@ -218,8 +251,9 @@ fn apply_sub_changes(
         for txt in &mut sub.text {
             *txt = format!("{position} {color_start}{txt}{color_end}");
         }
-        sub.start = SrtTimestamp::from(Into::<Duration>::into(sub.start) + offset);
-        sub.end = SrtTimestamp::from(Into::<Duration>::into(sub.end) + offset);
+        let offset = f32_to_chrono(offset);
+        sub.start = chrono_to_srt(srt_to_chrono(sub.start) + offset);
+        sub.end = chrono_to_srt(srt_to_chrono(sub.end) + offset);
     }
 }
 
@@ -243,8 +277,6 @@ fn main() -> Result<()> {
 
             let mut srt1 = load_sub(sub1)?;
             let mut srt2 = load_sub(sub2)?;
-            let sub1_offset = Duration::from_secs_f32(sub1_offset);
-            let sub2_offset = Duration::from_secs_f32(sub2_offset);
 
             apply_sub_changes(&mut srt1, sub1_color, sub1_position, sub1_offset);
             apply_sub_changes(&mut srt2, sub2_color, sub2_position, sub2_offset);
@@ -304,13 +336,13 @@ fn main() -> Result<()> {
                             &mut srt1,
                             sub1_color.clone(),
                             sub1_position,
-                            Duration::from_secs_f32(sub1_offset),
+                            sub1_offset,
                         );
                         apply_sub_changes(
                             &mut srt2,
                             sub2_color.clone(),
                             sub2_position,
-                            Duration::from_secs_f32(sub2_offset),
+                            sub2_offset,
                         );
 
                         // Create extension for new file, e.g. "enja"
@@ -329,4 +361,52 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Duration;
+
+    #[test]
+    fn test_srt_conversion_roundtrip() {
+        let original = SrtTimestamp {
+            hours: 1,
+            minutes: 23,
+            seconds: 45,
+            milliseconds: 678,
+        };
+
+        let duration = srt_to_chrono(original);
+        let roundtrip = chrono_to_srt(duration);
+
+        assert_eq!(original, roundtrip);
+    }
+
+    #[test]
+    fn test_duration_to_srt_zero() {
+        let duration = Duration::zero();
+        let expected = SrtTimestamp {
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            milliseconds: 0,
+        };
+        assert_eq!(chrono_to_srt(duration), expected);
+    }
+
+    #[test]
+    fn test_negative_duration_to_srt() {
+        let duration = Duration::milliseconds(-3723678); // -1h 2m 3s 678ms
+        let srt = chrono_to_srt(duration);
+        assert_eq!(
+            srt,
+            SrtTimestamp {
+                hours: 1,
+                minutes: 2,
+                seconds: 3,
+                milliseconds: 678,
+            }
+        );
+    }
 }
