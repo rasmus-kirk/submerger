@@ -1,16 +1,17 @@
 use anyhow::{bail, Context, Result};
-use log::{info, trace};
+use log::trace;
 use regex::Regex;
+use rsubs_lib::{SRT, SSA, VTT};
 use std::{
     collections::HashMap,
+    fmt::Debug,
     fs,
     path::{Path, PathBuf},
 };
-use subtp::{
-    srt::{SrtSubtitle, SrtTimestamp, SubRip},
-    vtt::{VttBlock, WebVtt},
-};
+use time::Duration;
 use walkdir::WalkDir;
+
+use crate::SubPosition;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SubFile {
@@ -107,80 +108,53 @@ pub fn find_matching_subtitle_files(
     Ok(ret)
 }
 
-pub fn load_sub(path: PathBuf) -> Result<SubRip> {
-    let file = fs::read_to_string(&path)?;
-    let ext = path
+pub fn load_sub(path: &Path) -> Result<SRT> {
+    let content = fs::read_to_string(path)?;
+
+    let srt = match path
         .extension()
-        .context(format!("unable to retrieve extension from file {file}"))?
+        .map(std::ffi::OsStr::to_ascii_lowercase)
+        .unwrap_or_default()
         .to_str()
-        .context(format!(
-            "unable to parse extension as a string from file {file}",
-        ))?;
-    let subfile = match ext {
-        "vtt" => vtt_to_subrip(WebVtt::parse(&file)?),
-        "srt" => SubRip::parse(&file)?,
-        _ => bail!(
-            "invalid extension ({}), supported extensions are: srt, vtt",
-            ext
-        ),
+        .unwrap_or_default()
+    {
+        "srt" => SRT::parse(content)?,
+        "vtt" => VTT::parse(content)?.to_srt(),
+        "ass" | "ssa" => SSA::parse(content)?.to_srt(),
+        _ => bail!("Unknown format"),
     };
 
-    info!(
-        "Loaded {} subtitles from {:?}",
-        subfile.subtitles.len(),
-        path
-    );
-
-    Ok(subfile)
+    Ok(srt)
 }
 
-pub fn merge(mut srt1: SubRip, srt2: SubRip) -> SubRip {
-    let srt2_len = srt2.subtitles.len();
-    srt1.subtitles.extend(srt2.subtitles);
+pub fn apply_sub_changes(
+    srt: &mut SRT,
+    color_opt: Option<String>,
+    position: SubPosition,
+    offset: f32,
+) {
+    let position = position.to_string();
+    let (color_start, color_end) = if let Some(color) = color_opt {
+        (format!("<font color=\"{color}\">"), "</font>".to_owned())
+    } else {
+        ("".to_owned(), "".to_owned())
+    };
+
+    for line in &mut srt.lines {
+        if let Some(s) = line.text.strip_prefix(r"{\an8}") {
+            line.text = s.to_string();
+        }
+        line.text = format!("{position} {color_start}{}{color_end}", line.text);
+        line.start += Duration::seconds_f32(offset);
+        line.end += Duration::seconds_f32(offset);
+    }
+}
+
+pub fn merge(mut srt1: SRT, srt2: SRT) -> SRT {
+    let srt2_len = srt2.lines.len();
+    srt1.lines.extend(srt2.lines);
     for i in 0..srt2_len {
-        srt1.subtitles[i].sequence = i as u32 + 1;
+        srt1.lines[i].sequence_number = i as u32 + 1;
     }
     srt1
-}
-
-fn vtt_block_to_srt(vtt_block: VttBlock, sequence: u32) -> Option<SrtSubtitle> {
-    let cue = match vtt_block {
-        VttBlock::Que(y) => y,
-        _ => return None,
-    };
-
-    let start = SrtTimestamp {
-        hours: cue.timings.start.hours,
-        minutes: cue.timings.start.minutes,
-        seconds: cue.timings.start.seconds,
-        milliseconds: cue.timings.start.milliseconds,
-    };
-    let end = SrtTimestamp {
-        hours: cue.timings.end.hours,
-        minutes: cue.timings.end.minutes,
-        seconds: cue.timings.end.seconds,
-        milliseconds: cue.timings.end.milliseconds,
-    };
-
-    Some(SrtSubtitle {
-        sequence,
-        start,
-        end,
-        text: cue.payload,
-        line_position: None,
-    })
-}
-
-fn vtt_to_subrip(vtt: WebVtt) -> SubRip {
-    let mut i = 1;
-    let mut subtitles = Vec::new();
-
-    for vtt_block in vtt {
-        if let Some(sub) = vtt_block_to_srt(vtt_block, i) {
-            subtitles.push(sub)
-        }
-        i += 1;
-    }
-
-    SubRip { subtitles }
 }
