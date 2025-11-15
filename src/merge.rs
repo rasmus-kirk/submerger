@@ -77,30 +77,31 @@ pub fn find_matching_subtitle_files(
         // Now find files with matching subtitle names in this directory
         for entry in dir_path.read_dir()? {
             let file_path = entry?.path();
-            if file_path.is_file()
-                && let Some(file_name) = file_path.file_name().and_then(|n| n.to_str())
-                && let Some(captures) = subtitle_pattern.captures(file_name)
-            {
-                trace!("Found file: {}", file_name);
+            if file_path.is_file() {
+                if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
+                    if let Some(captures) = subtitle_pattern.captures(file_name) {
+                        trace!("Found file: {}", file_name);
 
-                let lang = captures
-                    .name("lang")
-                    .context(format!(
-                        "impossible error: unable to find lang in {file_name}"
-                    ))?
-                    .as_str()
-                    .to_owned();
-                let hi = captures.name("hearing").is_some();
-                let val = SubFile {
-                    path: file_path,
-                    lang,
-                    hi,
-                };
+                        let lang = captures
+                            .name("lang")
+                            .context(format!(
+                                "impossible error: unable to find lang in {file_name}"
+                            ))?
+                            .as_str()
+                            .to_owned();
+                        let hi = captures.name("hearing").is_some();
+                        let val = SubFile {
+                            path: file_path,
+                            lang,
+                            hi,
+                        };
 
-                if !ret.contains_key(dir_path) {
-                    let _ = ret.insert(dir_path.to_owned(), Vec::new());
-                };
-                ret.get_mut(dir_path).unwrap().push(val);
+                        if !ret.contains_key(dir_path) {
+                            let _ = ret.insert(dir_path.to_owned(), Vec::new());
+                        };
+                        ret.get_mut(dir_path).unwrap().push(val);
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,3 @@
-#![feature(let_chains)]
-
 mod merge;
 mod test;
 
@@ -259,34 +257,34 @@ fn main() -> Result<()> {
                     }
 
                     // If we have found lang each for a file, continue
-                    if let Some(s1) = l1
-                        && let Some(s2) = l2
-                    {
-                        let mut srt1 = load_sub(&s1.path.clone())?;
-                        let mut srt2 = load_sub(&s2.path.clone())?;
+                    if let Some(s1) = l1 {
+                        if let Some(s2) = l2 {
+                            let mut srt1 = load_sub(&s1.path.clone())?;
+                            let mut srt2 = load_sub(&s2.path.clone())?;
 
-                        apply_sub_changes(
-                            &mut srt1,
-                            sub1_color.clone(),
-                            sub1_position,
-                            sub1_offset,
-                        );
-                        apply_sub_changes(
-                            &mut srt2,
-                            sub2_color.clone(),
-                            sub2_position,
-                            sub2_offset,
-                        );
+                            apply_sub_changes(
+                                &mut srt1,
+                                sub1_color.clone(),
+                                sub1_position,
+                                sub1_offset,
+                            );
+                            apply_sub_changes(
+                                &mut srt2,
+                                sub2_color.clone(),
+                                sub2_position,
+                                sub2_offset,
+                            );
 
-                        // Create extension for new file, e.g. "enja"
-                        let no_ext = base_file_stem(&s1.path)?;
-                        let out = dir.join(no_ext.with_extension(&out_ext));
+                            // Create extension for new file, e.g. "enja"
+                            let no_ext = base_file_stem(&s1.path)?;
+                            let out = dir.join(no_ext.with_extension(&out_ext));
 
-                        info!("Writing subs to {:?}", out);
+                            info!("Writing subs to {:?}", out);
 
-                        let merged = merge(srt1, srt2);
-                        let mut file = File::create(&out)?;
-                        file.write_all(format!("{merged}").as_bytes())?;
+                            let merged = merge(srt1, srt2);
+                            let mut file = File::create(&out)?;
+                            file.write_all(format!("{merged}").as_bytes())?;
+                        }
                     }
                 }
             }
